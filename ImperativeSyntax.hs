@@ -4,7 +4,7 @@ module ImperativeSyntax where
 
 -- Abstract Syntax Document
 
-data Env = Vars [(String,Int)] 
+data Env = Vars [(String,Int)]
             | Error -- Env Type contains Variable information / error
 
 data Program = Prog [Function] -- Program contains all syntax/code for any program
@@ -72,19 +72,22 @@ setVar newS newI (oldS,oldI) = if newS == oldS then (newS,newI) else (oldS,oldI)
  
 -- Test Programs       
   
---should set x to 1  
-testProgram :: Program
-testProgram = Prog [Func "Main" [Assign "x" (IConstant 5), If (Compare Equal (Var "x") (IConstant 5)) (Assign "x" (IConstant 1)) (Assign "x" (IConstant 10))]]
+-- Good Program, sets x to 5, then if x=5, sets x to 1  
+testGoodProgram :: Program
+testGoodProgram = Prog [Func "Main" [Assign "x" (IConstant 5), If (Compare Equal (Var "x") (IConstant 5)) (Assign "x" (IConstant 1)) (Assign "x" (IConstant 10))]]
 
---should set x to 5
-testFunction :: Function
-testFunction = Func "Main" [Assign "x" (IConstant 5)]
+-- Bad Program, sets x to 5, then if y=5, sets y to 5 - should return Error
+testBadProgram :: Program
+testBadProgram = Prog [Func "Main" [Assign "x" (IConstant 5), If (Compare Equal (Var "y") (IConstant 5)) (Assign "y" (IConstant 1)) (Assign "y" (IConstant 10))]]
 
 testEnv :: Env
-testEnv = Vars [("test",2)]
+testEnv = Vars []
 
-testString :: String
-testString = showEnv (program testProgram testEnv)
+goodTest :: String
+goodTest = showEnv (program testGoodProgram testEnv)
+
+badTest :: String
+badTest = showEnv (program testBadProgram testEnv)
 
 
 
