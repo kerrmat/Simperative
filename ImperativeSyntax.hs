@@ -4,28 +4,39 @@ module ImperativeSyntax where
 
 -- Abstract Syntax Document
 
-data Env = Vars [(String,Int)]
+data Env = Vars [(String,Int)] [(String, Bool)] [(String, String)]
             | Error -- Env Type contains Variable information / error
 
 data Program = Prog [Function] -- Program contains all syntax/code for any program
 
 data Function = Func String [Cmd] -- Function contains a list of commands that are called when a function is run and a name
 
-data Cmd = Assign String IntExpr  -- Can assign variables, run functions, or control program flow with if/while
+data Cmd = Assign String Expr  -- Can assign variables, run functions, or control program flow with if/while
             | If BoolExpr Cmd Cmd
             | While BoolExpr Cmd
             | List [Cmd]
+			| Exec String Env
             
+data Expr = Bexpr BoolExpr
+			| Iexpr IntExpr
+			| Sexpr StrExpr
              
-data BoolExpr = BConstant Bool  -- An expression that can be resloved to a bool value
+data BoolExpr = BVar String
+                | BConstant Bool  -- An expression that can be resloved to a bool value
                 | Compare CmpOperator IntExpr IntExpr
+				| IsEqual String String
                 | Resolve BoolOperator BoolExpr BoolExpr
                 | Not BoolExpr
 
-data IntExpr = Var String  -- An expression that can be resolved to an int value.  Can be used to hold variables.
+data IntExpr = IVar String  -- An expression that can be resolved to an int value.  Can be used to hold variables.
                 | IConstant Int
                 | Simplify IntOperator IntExpr IntExpr
                 | Negative IntExpr
+				
+data StrExpr = SVar String
+				| SConstant String
+				| Concat String String
+				
                 
 
 
@@ -58,9 +69,9 @@ showEnv (Vars []) = ""
 showEnv (Vars ((s,e):xs)) = "(" ++ s ++ ", " ++ show e ++ ")" ++ showEnv(Vars xs)
 
 -- Can Be Errored by searching for nonexistent variable
-searchEnv :: Env -> String -> Maybe Int
-searchEnv (Vars []) s = Nothing
-searchEnv (Vars ((n,v):xs)) s = if s == n then Just v else searchEnv (Vars xs) s
+searchEnv :: Env -> String -> Bool
+searchEnv (Vars []) s = False
+searchEnv (Vars ((n,v):xs)) s = if s == n then True else searchEnv (Vars xs) s
 
 
 -- Function to map across environment - takes string and intexpr - if string = variable name, change variable to have new value
@@ -109,20 +120,27 @@ function (Func n (x:xs)) e = function (Func n xs) (cmd x e)
 -- cmd should resolve if/while statements and assign variables
 cmd :: Cmd -> Env -> Env
 cmd c Error = Error
-cmd (Assign n i) (Vars e) = if (intexpr i (Vars e)) == Nothing
-                        then Error
-                        else if (searchEnv (Vars e) n) == Nothing
-                            then let Just val = intexpr i (Vars e)
-                                in Vars (e ++ [(n,val)])
-                            else let Just val = intexpr i (Vars e)
-                                in Vars (map (setVar n val) e)
+cmd (Assign n i) (Vars is bs ss) = assignexpr n i e if (intexpr i (Vars e)) == Nothing
+									then Error
+									else if (searchEnv (Vars e) n) == Nothing
+										then let Just val = intexpr i (Vars e)
+											in Vars (e ++ [(n,val)])
+										else let Just val = intexpr i (Vars e)
+											in Vars (map (setVar n val) e)
 cmd (If b ca cb) e = if boolexpr b e == Nothing
                         then Error
                         else if boolexpr b e == Just True 
                             then cmd ca e
                             else cmd cb e
 cmd (While b c) e = e -- todo - implement while loops with a recursive function
+cmd (Exec String Env) e = 
 
+
+
+assignexpr :: Expr -> Env -> Env
+assignexpr (Iexpr e) (Vars is bs ss)  = if (intexpr i (Vars e)) == Nothing
+											then Error
+										else if (searchEnv (Vare e) n) == Nothing 
 
 
 -- Turns an Integer Expression into an Integer
