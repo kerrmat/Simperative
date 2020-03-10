@@ -15,29 +15,28 @@ data Cmd = Assign String Expr  -- Can assign variables, run functions, or contro
             | If BoolExpr Cmd Cmd
             | While BoolExpr Cmd
             | List [Cmd]
-            | Exec String Env
-            
+			      | Exec String Env
+
 data Expr = Bexpr BoolExpr
-            | Iexpr IntExpr
-            | Sexpr StrExpr
-             
+			       | Iexpr IntExpr
+			       | Sexpr StrExpr
+
+data IntExpr = IVar String  -- An expression that can be resolved to an int value.  Can be used to hold variables.
+             | IConstant Int
+             | Simplify IntOperator IntExpr IntExpr
+             | Negative IntExpr
+
 data BoolExpr = BVar String
                 | BConstant Bool  -- An expression that can be resloved to a bool value
-                | Compare CmpOperator IntExpr IntExpr
-                | IsEqual String String
+                | CompareInt CmpOperator IntExpr IntExpr
+				        | IsEqual StrExpr StrExpr
                 | Resolve BoolOperator BoolExpr BoolExpr
                 | Not BoolExpr
 
-data IntExpr = IVar String  -- An expression that can be resolved to an int value.  Can be used to hold variables.
-                | IConstant Int
-                | Simplify IntOperator IntExpr IntExpr
-                | Negative IntExpr
-                
+
 data StrExpr = SVar String
-                | SConstant String
-                | Concat String String
-                
-                
+				        | SConstant String
+				        | Concat StrExpr StrExpr
 
 
 -- Operator Syntax Definitions
@@ -47,16 +46,16 @@ data CmpOperator = Greater
                     | Less
                     | Equal
 
--- And and Or Operators for two Booleans                    
+-- And and Or Operators for two Booleans
 data BoolOperator = And
                     | Or
 
--- Arithmetic Operators for two Ints                    
+-- Arithmetic Operators for two Ints
 data IntOperator = Add
                     | Subtract
                     | Multipy
                     | Divide
- 
+
 
 
 -- Library Functions
@@ -83,10 +82,10 @@ setVar newS newI (oldS,oldI) = if newS == oldS then (newS,newI) else (oldS,oldI)
 
 
 
- 
--- Test Programs       
-  
--- Good Program, sets x to 5, then if x=5, sets x to 1  
+
+-- Test Programs
+
+-- Good Program, sets x to 5, then if x=5, sets x to 1
 testGoodProgram :: Program
 testGoodProgram = Prog [Func "Main" [Assign "x" (IConstant 5), If (Compare Equal (IVar "x") (IConstant 5)) (Assign "x" (IConstant 1)) (Assign "x" (IConstant 10))]]
 
@@ -126,7 +125,7 @@ cmd c Error = Error
 cmd (Assign n i) e = assignexpr n i e
 cmd (If b ca cb) e = if boolexpr b e == Nothing
                         then Error
-                        else if boolexpr b e == Just True 
+                        else if boolexpr b e == Just True
                             then cmd ca e
                             else cmd cb e
 cmd (While b c) e = e -- todo - implement while loops with a recursive function
@@ -157,7 +156,6 @@ assignexpr s (Sexpr e) env@(Vars is bs ss f) = if (strexpr e env) == Nothing
                                                     else let Just val = strexpr e env
                                                         in (Vars is bs (map (setVar s val) ss) f)
 
-
 -- Turns an Integer Expression into an Integer
 intexpr :: IntExpr -> Env -> Maybe Int
 intexpr i Error = Nothing
@@ -173,7 +171,12 @@ boolexpr (Compare op int1 int2) e = if ((intexpr int1 e) == Nothing) || ((intexp
                                         else let ((Just val1),(Just val2)) = ((intexpr int1 e),(intexpr int2 e))
                                             in Just (cmpoperator op (val1) (val2))
 
-                                    
+-- Turns a String expression into a String
+strexpr :: StrExpr -> Env -> Maybe String
+strexpr (SVar v) (_ _ ss _) = (lookup v ss) -- search string array for v
+strexpr (SConstant s)  _ = Just s
+strexpr (Concat s1 s2) _ = Just (s1 ++ s2)
+
 -- Compares ints to return a bool
 cmpoperator :: CmpOperator -> Int -> Int -> Bool
 cmpoperator Equal int1 int2 = if int1 == int2 then True else False
@@ -185,5 +188,3 @@ cmpoperator Less int1 int2 = if int1 < int2 then True else False
 -- program is made up of a main function with commands, and a list of functions
 -- functions are made up of a list of commands
 -- commands can modify variables, call functions
-
-
