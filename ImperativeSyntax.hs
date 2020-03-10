@@ -6,6 +6,7 @@ module ImperativeSyntax where
 
 data Env = Vars [(String,Int)] [(String, Bool)] [(String, String)]
             | Error -- Env Type contains Variable information / error
+   deriving(Eq,Show)
 
 data Program = Prog [Function] -- Program contains all syntax/code for any program
 
@@ -172,6 +173,36 @@ cmpoperator Greater int1 int2 = if int1 > int2 then True else False
 cmpoperator Less int1 int2 = if int1 < int2 then True else False
 
 
+
+-- Static typing
+data Type = TBool | TInt | TString | TError
+deriving (Eq,Show)
+
+typeOf :: Expr -> Type
+typeOf Iexpr i = case (typeofI i) of
+                  TInt -> TInt
+                  _    -> TError
+typeOf Sexpr s = case (typeOfS s) of
+                  TString -> TString
+                  _       -> TError
+typeOf Bexpr b = case (typeOfB b) of
+                  TBool   -> TBool
+                  _       -> TError
+
+typeofI :: Iexpr -> Type
+typeOfI (IVar s)         = case (typeOf s) of
+                          TString     -> TInt
+                          _           -> TError
+typeOfI (IConstant i)    = case (typeOf i) of
+                          TInt        -> TInt
+                          _           -> TError
+typeOfI (Simplify IntOperator i j) = case (typeOf i,typeOf j) of
+                                    (TInt,TInt) -> TInt
+                                    _           -> TError
+typeOfI (Negative i)     = case (typeOf i) of
+                          TInt        -> TInt
+                          _           -> TError
+_                      = TError
 
 -- program is made up of a main function with commands, and a list of functions
 -- functions are made up of a list of commands
