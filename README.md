@@ -8,7 +8,7 @@
 Simperative is an imperative language using Haskell as it's meta language. It takes a program and the environment and returns a modified environment.
 
 ## Program execution
-Simperative is meant to be run on GHCi using the module ImperativeSyntax with only the prelude module loaded.
+Simperative is meant to be run on GHCi with the module ImperativeSyntax loaded.
 
 - Good examples - 
 
