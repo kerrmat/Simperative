@@ -200,21 +200,21 @@ cmd (Exec fname params@(Vars ip bp sp fp)) (Vars is bs ss fs) = if (lookup fname
 assignexpr :: String -> Expr -> Env -> Env
 assignexpr s (Iexpr e) env@(Vars is bs ss f) = if (intexpr e env) == Nothing
                                                 then Error "Cannot reference a nonexistent variable"
-                                                else if (lookup s is) == Nothing 
+                                                else if (lookup s is) == Nothing
                                                     then let Just val = intexpr e env
                                                         in (Vars (is ++ [(s,val)]) bs ss f)
                                                     else let Just val = intexpr e env
                                                         in (Vars (map (setIVar s val) is) bs ss f)
 assignexpr s (Bexpr e) env@(Vars is bs ss f) = if (boolexpr e env) == Nothing
                                                 then Error "Cannot reference a nonexistent variable"
-                                                else if (lookup s bs) == Nothing 
+                                                else if (lookup s bs) == Nothing
                                                     then let Just val = boolexpr e env
                                                         in (Vars is (bs ++ [(s,val)]) ss f)
                                                     else let Just val = boolexpr e env
                                                         in (Vars is (map (setBVar s val) bs) ss f)
 assignexpr s (Sexpr e) env@(Vars is bs ss f) = if (strexpr e env) == Nothing
                                                 then Error "Cannot reference a nonexistent variable"
-                                                else if (lookup s ss) == Nothing 
+                                                else if (lookup s ss) == Nothing
                                                     then let Just val = strexpr e env
                                                         in (Vars is bs (ss ++ [(s,val)]) f)
                                                     else let Just val = strexpr e env
@@ -286,33 +286,52 @@ cmpoperator Less int1 int2 = if int1 < int2 then True else False
 
 -- Static typing
 data Type = TBool | TInt | TString | TError
-deriving (Eq,Show)
+      deriving (Eq,Show)
 
-typeOf :: Expr -> Type
-typeOf Iexpr i = case (typeofI i) of
-                  TInt -> TInt
-                  _    -> TError
-typeOf Sexpr s = case (typeOfS s) of
-                  TString -> TString
-                  _       -> TError
-typeOf Bexpr b = case (typeOfB b) of
-                  TBool   -> TBool
-                  _       -> TError
+typeOfExpr :: Expr -> Type
+typeOfExpr (Iexpr i)           = case (typeOfI i) of
+                              TInt -> TInt
+                              _    -> TError
+typeOfExpr (Sexpr s)           = case (typeOfS s) of
+                              TString -> TString
+                              _       -> TError
+typeOfExpr (Bexpr b)           = case (typeOfB b) of
+                              TBool   -> TBool
+                              _       -> TError
 
-typeofI :: Iexpr -> Type
-typeOfI (IVar s)         = case (typeOf s) of
-                          TString     -> TInt
-                          _           -> TError
-typeOfI (IConstant i)    = case (typeOf i) of
-                          TInt        -> TInt
-                          _           -> TError
-typeOfI (Simplify IntOperator i j) = case (typeOf i,typeOf j) of
-                                    (TInt,TInt) -> TInt
-                                    _           -> TError
-typeOfI (Negative i)     = case (typeOf i) of
-                          TInt        -> TInt
-                          _           -> TError
-_                      = TError
+typeOfI :: IntExpr -> Type
+typeOfI (IVar s)           = TInt
+typeOfI (IConstant i)      = TInt
+typeOfI (Simplify _ i j)   = case (typeOfI i,typeOfI j) of
+                               (TInt,TInt) -> TInt
+                               _           -> TError
+typeOfI (Negative i)       = case (typeOfI i) of
+                               TInt        -> TInt
+                               _           -> TError
+_                          = TError
+
+typeOfB :: BoolExpr -> Type
+typeOfB (BVar b)           = TBool
+typeOfB (BConstant b)      = TBool
+typeOfB (CompareInt _ a b) = case (typeOfI a, typeOfI b) of
+                               (TInt,TInt) -> TBool
+                               _           -> TError
+typeOfB (IsEqual s1 s2)    = case (typeOfS s1, typeOfS s2) of
+                               (TString, TString) -> TBool
+                               _                  -> TError
+typeOfB (Resolve _ b1 b2)  = case (typeOfB b1, typeOfB b2) of
+                               (TBool, TBool)     -> TBool
+                               _                  -> TError
+typeOfB (Not b)            = case (typeOfB b)     of
+                               (TBool)            -> TBool
+                               _                  -> TError
+
+typeOfS :: StrExpr -> Type
+typeOfS (SVar s)           = TString
+typeOfS (SConstant s)      = TString
+typeOfS (Concat s1 s2)     = case (typeOfS s1, typeOfS s2) of
+                              (TString,TString) -> TString
+                              _                 -> TError
 
 -- program is made up of a main function with commands, and a list of functions
 -- functions are made up of a list of commands
