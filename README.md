@@ -21,7 +21,6 @@ Simperative is meant to be run on GHCi with the module ImperativeSyntax loaded.
 	**typeOfProgram birthdayCardBad**
 	
 	**typeOfProgram badFC**
-	\n
 
 	The expected outcome on all of these commands should be True, since they all have valid typing.
 
