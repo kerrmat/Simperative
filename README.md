@@ -10,6 +10,20 @@ Simperative is an imperative language using Haskell as it's meta language. It ta
 ## Program execution
 Simperative is meant to be run on GHCi with the module ImperativeSyntax loaded.
 
+- Static Typing -
+
+	To run our static type checker on each of our example programs, type the following commands:
+	
+	**typeOfProgram birthdayCard**
+	
+	**typeOfProgram passwordProgram**
+	
+	**typeOfProgram birthdayCardBad**
+	
+	**typeOfProgram badFC**
+
+	The expected outcome on all of these commands should be True, since they all have valid typing.
+
 - Good examples - 
 
   After Loading module, type **testPassword** - Runs passwordProgram program that checks if there is a string already in the environment that matches the string "password". Pushes "correct password" message to env
