@@ -1,5 +1,11 @@
 module ImperativeSyntax where
 
+
+-- program is made up of a main function with commands, and a list of functions
+-- functions are made up of a list of commands
+-- commands can modify variables, call functions
+
+
 -- Abstract Syntax Document
 
 data Env = Vars [(String,Int)] [(String, Bool)] [(String, String)] [(String, Function)]
@@ -69,21 +75,6 @@ data IntOperator = Add
 -- Library Functions
 
 
--- Simple Print Function to show environment
--- showEnv :: Env -> String
--- showEnv Error = "Error"
--- showEnv (Vars a b c d) = "Ints: \n" ++ showArray a ++ "\nBools: \n" ++ showArray b ++ "\nStrings: \n" ++ showArray c
-
--- showArray :: [(String,b)] -> String
--- showArray [] = ""
--- showArray ((s,e):xs) = "(" ++ s ++ ", " ++ show e ++ ")" ++ showArray(xs)
-
--- Can Be Errored by searching for nonexistent variable
--- searchEnv :: Env -> String -> Bool
--- searchEnv (Vars []) s = False
--- searchEnv (Vars ((n,v):xs)) s = if s == n then True else searchEnv (Vars xs) s
-
-
 -- Function to map across environment - takes string and intexpr - if string = variable name, change variable to have new value
 setIVar :: String -> Int -> (String,Int) -> (String,Int)
 setIVar newS newI (oldS,oldI) = if newS == oldS then (newS,newI) else (oldS,oldI)
@@ -112,10 +103,7 @@ showStrings ((s,v):xs) = "(" ++ s ++ "," ++ v ++ "), " ++ showStrings xs
 
 
 
-
 -- Test Programs
-
-
 
 
 -- Test String Function - function creates a birthday card given a number of "very"s (in v var) and a name (in name var) and saves it in card var
@@ -130,7 +118,7 @@ passwordProgram :: Program
 passwordProgram = Prog [Func "Main" [(If (IsEqual (SVar "password") (SConstant "password")) (Assign "message" (Sexpr (SConstant "Correct Password, Congratulations"))) (Assign "message" (Sexpr (SConstant "Incorrect Password, Sorry"))))]]
 
 
--- Bad Birthday Program 
+-- Bad Birthday Program
 birthdayCardBad :: Program
 birthdayCardBad = Prog [(Func "Main" [(If (Resolve And (Not (BConstant False)) (BVar "f")) (Exec "BC" (Vars [] [] [] [])) (Exec "BC" (Vars [] [] [] [])))]), (Func "BC" [(Assign "card" (Sexpr (Concat (SConstant "Happy Birthday ") (SVar "name")))), (Assign "card" (Sexpr (Concat (SVar "card") (SConstant (",\nI hope you have a "))))), (While (CompareInt Greater (IVar "v") (IConstant 0)) (List [(Assign "card" (Sexpr (Concat (SVar "card") (SConstant ("very "))))),(Assign "v" (Iexpr (Simplify Subtract (IVar "v") (IConstant 1))))])), (Assign "card" (Sexpr (Concat (SVar "card") (SConstant ("good birthday")))))])]
 
@@ -311,14 +299,14 @@ typeOfProgram (Prog []) = True
 typeOfProgram (Prog (x:xs)) = if (typeOfFunction x)
                                 then typeOfProgram (Prog xs)
                                 else False
-                                
+
 typeOfFunction :: Function -> Bool
 typeOfFunction (Func _ []) = True
 typeOfFunction (Func s (x:xs)) = if (typeOfCMD x)
                                  then typeOfFunction (Func s xs)
                                  else False
-                                
-                                
+
+
 typeOfCMD :: Cmd -> Bool
 typeOfCMD (If b c1 c2) = case (typeOfB b, typeOfCMD c1, typeOfCMD c2) of
                             (TBool, True, True)   -> True
@@ -337,6 +325,8 @@ typeOfCMD (Assign s e) = case (typeOfExpr e) of
                             TString   -> True
                             _         -> False
 
+
+-- Passes Expr to their correct type checker
 typeOfExpr :: Expr -> Type
 typeOfExpr (Iexpr i)           = case (typeOfI i) of
                               TInt    -> TInt
@@ -348,6 +338,7 @@ typeOfExpr (Bexpr b)           = case (typeOfB b) of
                               TBool   -> TBool
                               _       -> TError
 
+-- Check int expressions for correct types
 typeOfI :: IntExpr -> Type
 typeOfI (IVar s)           = TInt
 typeOfI (IConstant i)      = TInt
@@ -359,6 +350,7 @@ typeOfI (Negative i)       = case (typeOfI i) of
                                _           -> TError
 _                          = TError
 
+-- Check bool expressions for correct types
 typeOfB :: BoolExpr -> Type
 typeOfB (BVar b)           = TBool
 typeOfB (BConstant b)      = TBool
@@ -375,13 +367,10 @@ typeOfB (Not b)            = case (typeOfB b)     of
                                (TBool)            -> TBool
                                _                  -> TError
 
+-- Check string expressions for correct types
 typeOfS :: StrExpr -> Type
 typeOfS (SVar s)           = TString
 typeOfS (SConstant s)      = TString
 typeOfS (Concat s1 s2)     = case (typeOfS s1, typeOfS s2) of
                               (TString,TString) -> TString
                               _                 -> TError
-
--- program is made up of a main function with commands, and a list of functions
--- functions are made up of a list of commands
--- commands can modify variables, call functions
