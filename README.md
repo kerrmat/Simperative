@@ -12,13 +12,13 @@ Simperative is meant to be run on GHCi with the module ImperativeSyntax loaded.
 
 - Good examples - 
 
-  After Loading module, type testTwenty - Runs a program that calls a function to adds two ints together, then adds one to that int until it reaches 20
+  After Loading module, type **testPassword** - Runs passwordProgram program that checks if there is a string already in the environment that matches the string "password". Pushes "correct password" message to env
   Expected Output: 
-	Ints: (x,5), (y,5), (z,10), (Count,20),
+	Ints:
 	Bools:
-	Strings:
+	Strings: (password, password), (message, Correct Password, Congratulations)
 	
-  After Loading module, type testCardGood - Runs birthdayCard program, which generates a birthday card given a name and number of "very"s, on an environment that has a valid "name" and "v" variable
+  After Loading module, type **testCardGood** - Runs birthdayCard program, which generates a birthday card given a name and number of "very"s, on an environment that has a valid "name" and "v" variable
   Expected Output:
 	Ints: (v,0),
 	Bools: (f,True),
@@ -28,11 +28,17 @@ Simperative is meant to be run on GHCi with the module ImperativeSyntax loaded.
   
 - Bad examples - 
 
-  After loading module, type testBadCall - Runs a program that calls a nonexistent function.
+  After Loading module, type **testWrongPassword** - Runs passwordProgram program that checks if there is a string already in the environment that matches the string "password". Pushes "incorrect password" message to env
+  Expected Output: 
+	Ints:
+	Bools:
+	Strings: (password, salami), (message, Incorrect Password, Sorry)
+
+  After loading module, type **testBadCall** - Runs a program that calls a nonexistent function.
   Expected Output: 
 	Error: Cannot reference a nonexistent function
   
-  After loading module, type testCardBad - Runs birthdayCard program with an invalid environment, where not all required variables are declared
+  After loading module, type **testCardBad** - Runs birthdayCardBad program with an invalid environment, where not all required variables are declared
   Expected Output: 
 	Error: Cannot reference a nonexistent variable
   
