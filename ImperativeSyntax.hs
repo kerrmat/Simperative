@@ -116,40 +116,58 @@ showStrings ((s,v):xs) = "(" ++ s ++ "," ++ v ++ "), " ++ showStrings xs
 -- Test Programs
 
 
--- Bad Program, attempts to run a nonexistent function
-badFC :: Program
-badFC = Prog [Func "Main" [(Exec "Test" (Vars [] [] [] [("Test", Func "Test" [(Assign "x" (Iexpr (IConstant 18)))])]))]]
 
--- Test Large program - sets x to 5, then if x > 3, runs function F2 with param y = 5, F2 adds x any and assigns the solution to z.  Then sets count to z, and increments count while it is < 20
--- Contains testing for CMD / assign, if, while, and exc; IntExpr / IVar, IConstant, Add; BoolExpr / CompareInt;
-addToTwenty :: Program
-addToTwenty = Prog [Func "Main" [(Assign "x" (Iexpr (IConstant 5))), (If (CompareInt Greater (IVar "x") (IConstant 3)) (Exec "F2" (Vars [("y", 5)] [] [] [])) (Exec "F2" (Vars [("y", 10)] [] [] []))), (Assign "Count" (Iexpr (IVar "z"))), (While (CompareInt Less (IVar "Count") (IConstant 20)) (Assign "Count" (Iexpr (Simplify Add (IVar "Count") (IConstant 1)))))], Func "F2" [(Assign "z" (Iexpr (Simplify Add (IVar "x") (IVar "y"))))]]
 
 -- Test String Function - function creates a birthday card given a number of "very"s (in v var) and a name (in name var) and saves it in card var
 -- Contains testing for all CMD subtypes, Int subtypes of Variable, Constant, and substracting, Bool subtypes of Constant, Comparing ints, and operating on bools, String subtypes of Constant, Variable, and Concatenation
 -- Specific things not tested - comparing strings, negating ints
-
 birthdayCard :: Program
 birthdayCard = Prog [(Func "Main" [(If (Resolve And (Not (BConstant False)) (BVar "f")) (Exec "BC" (Vars [("v", 3)] [] [("name","Matt")] [])) (Exec "BC" (Vars [("v", 5)] [] [("name","Lane")] [])))]), (Func "BC" [(Assign "card" (Sexpr (Concat (SConstant "Happy Birthday ") (SVar "name")))), (Assign "card" (Sexpr (Concat (SVar "card") (SConstant (",\nI hope you have a "))))), (While (CompareInt Greater (IVar "v") (IConstant 0)) (List [(Assign "card" (Sexpr (Concat (SVar "card") (SConstant ("very "))))),(Assign "v" (Iexpr (Simplify Subtract (IVar "v") (IConstant 1))))])), (Assign "card" (Sexpr (Concat (SVar "card") (SConstant ("good birthday")))))])]
 
 
-testEnv :: Env
-testEnv = Vars [] [] [] []
+-- Test String Comparison - function checks if the password variable equals "password"
+passwordProgram :: Program
+passwordProgram = Prog [Func "Main" [(If (IsEqual (SVar "password") (SConstant "password")) (Assign "message" (Sexpr (SConstant "Correct Password, Congratulations"))) (Assign "message" (Sexpr (SConstant "Incorrect Password, Sorry"))))]]
 
-bcEnv :: Env
-bcEnv = Vars [] [("f", True)] [] []
 
-testTwenty :: IO()
-testTwenty = showEnv (program addToTwenty testEnv)
+-- Bad Birthday Program 
+birthdayCardBad :: Program
+birthdayCardBad = Prog [(Func "Main" [(If (Resolve And (Not (BConstant False)) (BVar "f")) (Exec "BC" (Vars [] [] [] [])) (Exec "BC" (Vars [] [] [] [])))]), (Func "BC" [(Assign "card" (Sexpr (Concat (SConstant "Happy Birthday ") (SVar "name")))), (Assign "card" (Sexpr (Concat (SVar "card") (SConstant (",\nI hope you have a "))))), (While (CompareInt Greater (IVar "v") (IConstant 0)) (List [(Assign "card" (Sexpr (Concat (SVar "card") (SConstant ("very "))))),(Assign "v" (Iexpr (Simplify Subtract (IVar "v") (IConstant 1))))])), (Assign "card" (Sexpr (Concat (SVar "card") (SConstant ("good birthday")))))])]
 
-testBadCall :: IO()
-testBadCall = showEnv (program badFC testEnv)
+
+-- Bad Program, attempts to run a nonexistent function
+badFC :: Program
+badFC = Prog [Func "Main" [(Exec "Test" (Vars [] [] [] [("Test", Func "Test" [(Assign "x" (Iexpr (IConstant 18)))])]))]]
+
+
+passwordEnv :: Env
+passwordEnv = (Vars [] [] [("password", "password")] [])
+
+wrongPasswordEnv :: Env
+wrongPasswordEnv = (Vars [] [] [("password", "salami")] [])
+
+emptyEnv :: Env
+emptyEnv = Vars [] [] [] []
+
+birthdayEnv :: Env
+birthdayEnv = Vars [] [("f", True)] [] []
+
+
+
+testPassword :: IO()
+testPassword = showEnv (program passwordProgram passwordEnv)
+
+testWrongPassword :: IO()
+testWrongPassword = showEnv (program passwordProgram wrongPasswordEnv)
 
 testCardGood :: IO()
-testCardGood = showEnv (program birthdayCard bcEnv)
+testCardGood = showEnv (program birthdayCard birthdayEnv)
 
 testCardBad :: IO()
-testCardBad = showEnv (program birthdayCard testEnv)
+testCardBad = showEnv (program birthdayCardBad birthdayEnv)
+
+testBadCall :: IO()
+testBadCall = showEnv (program badFC emptyEnv)
 
 
 
@@ -288,10 +306,41 @@ cmpoperator Less int1 int2 = if int1 < int2 then True else False
 data Type = TBool | TInt | TString | TError
       deriving (Eq,Show)
 
+typeOfProgram :: Program -> Bool
+typeOfProgram (Prog []) = True
+typeOfProgram (Prog (x:xs)) = if (typeOfFunction x)
+                                then typeOfProgram (Prog xs)
+                                else False
+                                
+typeOfFunction :: Function -> Bool
+typeOfFunction (Func _ []) = True
+typeOfFunction (Func s (x:xs)) = if (typeOfCMD x)
+                                 then typeOfFunction (Func s xs)
+                                 else False
+                                
+                                
+typeOfCMD :: Cmd -> Bool
+typeOfCMD (If b c1 c2) = case (typeOfB b, typeOfCMD c1, typeOfCMD c2) of
+                            (TBool, True, True)   -> True
+                            _                     -> False
+typeOfCMD (While b c) = case (typeOfB b, typeOfCMD c) of
+                            (TBool, True)         -> True
+                            _                     -> False
+typeOfCMD (List [])    = True
+typeOfCMD (List (x:xs)) = case (typeOfCMD x) of
+                            True                  -> typeOfCMD (List xs)
+                            _                     -> False
+typeOfCMD (Exec s e) = True -- Running this command with anything other than a String and a valid Env Variable will result in a Haskell Type error, so we do not need to check at compile time.
+typeOfCMD (Assign s e) = case (typeOfExpr e) of
+                            TInt      -> True
+                            TBool     -> True
+                            TString   -> True
+                            _         -> False
+
 typeOfExpr :: Expr -> Type
 typeOfExpr (Iexpr i)           = case (typeOfI i) of
-                              TInt -> TInt
-                              _    -> TError
+                              TInt    -> TInt
+                              _       -> TError
 typeOfExpr (Sexpr s)           = case (typeOfS s) of
                               TString -> TString
                               _       -> TError
