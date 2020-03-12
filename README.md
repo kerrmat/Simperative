@@ -12,13 +12,13 @@ Simperative is meant to be run on GHCi with the module ImperativeSyntax loaded.
 
 - Static Typing -
 
-To run our static type checker on each of our example programs, type the following commands:
-**typeOfProgram birthdayCard**
-**typeOfProgram passwordProgram**
-**typeOfProgram birthdayCardBad**
-**typeOfProgram badFC**
+	To run our static type checker on each of our example programs, type the following commands:
+	**typeOfProgram birthdayCard**
+	**typeOfProgram passwordProgram**
+	**typeOfProgram birthdayCardBad**
+	**typeOfProgram badFC**
 
-The expected outcome on all of these commands should be True, since they all have valid typing.
+	The expected outcome on all of these commands should be True, since they all have valid typing.
 
 - Good examples - 
 
